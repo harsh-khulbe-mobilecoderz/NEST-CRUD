@@ -14,27 +14,45 @@ export class UserService {
   ) {}
   async create(createUserDto: CreateUserDto) {
     try {
-      await this.userModel.create(createUserDto);
+      const user = await this.userModel.create(createUserDto);
+      return user;
     } catch (error) {
       console.log(error);
+      throw new Error('Failed to create user: ' + error.message);
     }
     
     
   }
 
   async findAll() {
-    return `This action returns all user`;
+    const users = await this.userModel.find();
+    if(!users) {
+      return {message:"Users not found"};
+    }
+    return {message:"Users found successfully",users};
   }
 
   async findOne(id: number) {
-    return `This action returns a #${id} user`;
+    const user = await this.userModel.findOne({_id:id});
+    if(!user) {
+      return {message:"User not found"};
+    }
+    return {message:"User found successfully",user};
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+    const updatedUser = await this.userModel.findByIdAndUpdate(id,updateUserDto,{new:true});
+    if(!updatedUser) {
+      return {message:"Can't update the user"};
+    }
+    return {message:"User updated successfully",updatedUser};
   }
 
   async remove(id: number) {
-    return `This action removes a #${id} user`;
+    const deletedUser = await this.userModel.findByIdAndDelete(id);
+    if(!deletedUser) {
+      return {message:"Can't delete the user"};
+    }
+    return {message:"User deleted successfully",deletedUser};
   }
 }
