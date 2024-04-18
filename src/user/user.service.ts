@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
+import { CreateUserDto, LoginUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from 'src/models/user.model';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { IUser } from 'src/interfaces/user.interface';
+import { Auth } from 'src/utils/auth';
 
 @Injectable()
 export class UserService {
@@ -40,19 +40,42 @@ export class UserService {
     return {message:"User found successfully",user};
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto) {
+  async update(id: string, updateUserDto: UpdateUserDto) {
     const updatedUser = await this.userModel.findByIdAndUpdate(id,updateUserDto,{new:true});
+    console.log(updatedUser);
     if(!updatedUser) {
       return {message:"Can't update the user"};
     }
     return {message:"User updated successfully",updatedUser};
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const deletedUser = await this.userModel.findByIdAndDelete(id);
     if(!deletedUser) {
       return {message:"Can't delete the user"};
     }
     return {message:"User deleted successfully",deletedUser};
+  }
+
+  async login(loginCredentials:LoginUserDto) {
+    const {email,password} = loginCredentials;
+    const user = await this.userModel.findOne({email});
+    if(!user) {
+      return {message:"User not found"};
+    }
+    if(user.password !== password) {
+      return {message:"Incorrect password"};
+    }
+    const obj = {
+      id:user._id,
+      name:user.name,
+      email:user.email,
+      password:user.password,
+    }
+    const token = await new Auth().generateToken(obj);
+    if(token) {
+      return {message:"User logged in sucessfully",token}
+    }
+    
   }
 }
