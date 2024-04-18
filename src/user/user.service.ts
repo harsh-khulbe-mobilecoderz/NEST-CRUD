@@ -11,71 +11,100 @@ export class UserService {
 
   constructor(
     @InjectModel('User') private readonly userModel: Model<IUser>
-  ) {}
+  ) { }
   async create(createUserDto: CreateUserDto) {
     try {
-      const user = await this.userModel.create(createUserDto);
+      const { name, email, password } = createUserDto;
+      const hashedPassword = await new Auth().encryptPassword(password);
+      const user = await this.userModel.create({
+        name,
+        email,
+        password: hashedPassword
+      });
       return user;
     } catch (error) {
       console.log(error);
       throw new Error('Failed to create user: ' + error.message);
     }
-    
-    
+
+
   }
 
   async findAll() {
-    const users = await this.userModel.find();
-    if(!users) {
-      return {message:"Users not found"};
+    try {
+      const users = await this.userModel.find();
+      if (!users) {
+        return { message: "Users not found" };
+      }
+      return { message: "Users found successfully", users };
+    } catch (error) {
+      console.log(error);
     }
-    return {message:"Users found successfully",users};
   }
 
   async findOne(id: number) {
-    const user = await this.userModel.findOne({_id:id});
-    if(!user) {
-      return {message:"User not found"};
+    try {
+      const user = await this.userModel.findOne({ _id: id });
+      if (!user) {
+        return { message: "User not found" };
+      }
+      return { message: "User found successfully", user };
+    } catch (error) {
+      console.log(error);
     }
-    return {message:"User found successfully",user};
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
-    const updatedUser = await this.userModel.findByIdAndUpdate(id,updateUserDto,{new:true});
-    console.log(updatedUser);
-    if(!updatedUser) {
-      return {message:"Can't update the user"};
+    try {
+      const updatedUser = await this.userModel.findByIdAndUpdate(id, updateUserDto, { new: true });
+      if (!updatedUser) {
+        return { message: "Can't update the user" };
+      }
+      return { message: "User updated successfully", updatedUser };
+    } catch (error) {
+      console.log(error);
     }
-    return {message:"User updated successfully",updatedUser};
   }
 
   async remove(id: string) {
-    const deletedUser = await this.userModel.findByIdAndDelete(id);
-    if(!deletedUser) {
-      return {message:"Can't delete the user"};
+    try {
+      const deletedUser = await this.userModel.findByIdAndDelete(id);
+      if (!deletedUser) {
+        return { message: "Can't delete the user" };
+      }
+      return { message: "User deleted successfully", deletedUser };
+    } catch (error) {
+      console.log(error);
     }
-    return {message:"User deleted successfully",deletedUser};
   }
 
-  async login(loginCredentials:LoginUserDto) {
-    const {email,password} = loginCredentials;
-    const user = await this.userModel.findOne({email});
-    if(!user) {
-      return {message:"User not found"};
+  async login(loginCredentials: LoginUserDto) {
+    try {
+      const { email, password } = loginCredentials;
+    const user = await this.userModel.findOne({ email });
+
+    if (!user) {
+      return { message: "User not found" };
     }
-    if(user.password !== password) {
-      return {message:"Incorrect password"};
+    const isPasswordMatch = await new Auth().comparePassword(password, user.password);
+
+    if (!isPasswordMatch) {
+      return { message: "Incorrect password" };
     }
+
     const obj = {
-      id:user._id,
-      name:user.name,
-      email:user.email,
-      password:user.password,
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      password: user.password,
     }
     const token = await new Auth().generateToken(obj);
-    if(token) {
-      return {message:"User logged in sucessfully",token}
+    if (token) {
+      return { message: "User logged in sucessfully", token }
     }
-    
+
+    } catch (error) {
+      console.log(error);
+    }
   }
 }

@@ -1,4 +1,5 @@
-import * as jwt from "jsonwebtoken"
+import * as jwt from "jsonwebtoken";
+import * as bcrypt from "bcrypt";
 
 export class Auth {
     async generateToken(user:any) {
@@ -21,5 +22,15 @@ export class Auth {
     async decodeToken(token:string) {
         const userDetails = jwt.verify(token,process.env.JWT_SECRET_KEY);
         return userDetails;
+    }
+
+    async encryptPassword(password:string) {
+        const hashedPassword = await bcrypt.hash(password,10);
+        return hashedPassword;
+    }
+
+    async comparePassword(password:string,userPassword:string) {
+        const isSame = await bcrypt.compare(password,userPassword);
+        return isSame;
     }
 }
