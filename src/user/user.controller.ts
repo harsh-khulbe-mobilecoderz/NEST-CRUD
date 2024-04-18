@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Put, Req, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put, Req, Res } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto, LoginUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Request, Response } from 'express';
 import { IUser } from 'src/interfaces/user.interface';
+import ResponseHelper from 'src/helpers/responseHelper';
 
 interface RequestWithUser extends Request {
   user: IUser;
@@ -15,9 +16,10 @@ export class UserController {
 
   //Create a new user
   @Post()
-  create(@Body() createUserDto: CreateUserDto) {
+  async create(@Res() res: Response, @Body() createUserDto: CreateUserDto) {
     try {
-      return this.userService.create(createUserDto);
+      const user = await this.userService.create(createUserDto);
+      return ResponseHelper.responseHandler(res, user.statusCode, user.status, user.message, user.data);
     } catch (error) {
       console.log(error);
     }
@@ -25,21 +27,25 @@ export class UserController {
 
   //Retrieve all users
   @Get()
-  findAll() {
+  async findAll(@Res() res: Response) {
     try {
-      return this.userService.findAll();
+      const users = await this.userService.findAll();
+      return ResponseHelper.responseHandler(res, users.statusCode, users.status, users.message, users.data);
     } catch (error) {
       console.log(error);
+      return ResponseHelper.responseHandler(res, error.statusCode, error.status, error.message, error);
     }
   }
 
   //Retrieve a single user
   @Get(':id')
-  findOne(@Param('id') id: number) {
+  async findOne(@Res() res: Response, @Param('id') id: number) {
     try {
-      return this.userService.findOne(id);
+      const user = await this.userService.findOne(id);
+      return ResponseHelper.responseHandler(res, user.statusCode, user.status, user.message, user.data);
     } catch (error) {
       console.log(error);
+      return ResponseHelper.responseHandler(res, error.statusCode, error.status, error.message, error);
     }
   }
 
@@ -49,9 +55,12 @@ export class UserController {
     try {
       const id = req.user._id;
       const updatedUser = await this.userService.update(id, updateUserDto);
-      return res.json(updatedUser);
+      return ResponseHelper.responseHandler(res, updatedUser.statusCode, updatedUser.status,
+        updatedUser.message, updatedUser.data);
+
     } catch (error) {
       console.log(error);
+      return ResponseHelper.responseHandler(res, error.statusCode, error.status, error.message, error);
     }
   }
 
@@ -60,19 +69,23 @@ export class UserController {
   async remove(@Req() req: RequestWithUser, @Res() res: Response) {
     try {
       const id = req.user._id;
-    const deletedUser = await this.userService.remove(id);
-    return res.json(deletedUser);
+      const deletedUser = await this.userService.remove(id);
+      return ResponseHelper.responseHandler(res,deletedUser.statusCode,deletedUser.status,
+      deletedUser.data, deletedUser.message);
     } catch (error) {
       console.log(error);
+      return ResponseHelper.responseHandler(res, error.statusCode, error.status, error.message, error);
     }
   }
 
   @Post("/login")
-  loginUser(@Body() loginCredentials: LoginUserDto) {
+  async loginUser(@Res() res:Response, @Body() loginCredentials: LoginUserDto) {
     try {
-      return this.userService.login(loginCredentials);
+    const login = await this.userService.login(loginCredentials);
+    return ResponseHelper.responseHandler(res, login.statusCode, login.status, login.message, login.data, login.token);
     } catch (error) {
       console.log(error);
+      return ResponseHelper.responseHandler(res, error.statusCode, error.status, error.message, error);
     }
   }
 }

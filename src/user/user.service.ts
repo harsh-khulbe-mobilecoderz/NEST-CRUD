@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { CreateUserDto, LoginUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { IUser } from 'src/interfaces/user.interface';
 import { Auth } from 'src/utils/auth';
+import { Message } from 'src/constants/responseMessage';
 
 @Injectable()
 export class UserService {
@@ -21,10 +22,10 @@ export class UserService {
         email,
         password: hashedPassword
       });
-      return user;
+      return { status: true, statusCode: HttpStatus.CREATED, data: user, message: Message.CREATE_USER };
     } catch (error) {
       console.log(error);
-      throw new Error('Failed to create user: ' + error.message);
+      return { status: false, statusCode: HttpStatus.INTERNAL_SERVER_ERROR, message: error.message }
     }
 
 
@@ -36,9 +37,10 @@ export class UserService {
       if (!users) {
         return { message: "Users not found" };
       }
-      return { message: "Users found successfully", users };
+      return { status: true, statusCode: HttpStatus.OK, data: users, message: Message.USER_DETAILS };
     } catch (error) {
       console.log(error);
+      return { status: false, statusCode: HttpStatus.INTERNAL_SERVER_ERROR, message: error.message }
     }
   }
 
@@ -46,11 +48,12 @@ export class UserService {
     try {
       const user = await this.userModel.findOne({ _id: id });
       if (!user) {
-        return { message: "User not found" };
+        return { status: false, statusCode: HttpStatus.NOT_FOUND, data: user, message: Message.USER_NOT_FOUND };
       }
-      return { message: "User found successfully", user };
+      return { status: true, statusCode: HttpStatus.OK, data: user, message: Message.USER_DETAILS };
     } catch (error) {
       console.log(error);
+      return { status: false, statusCode: HttpStatus.INTERNAL_SERVER_ERROR, message: error.message }
     }
   }
 
@@ -58,11 +61,12 @@ export class UserService {
     try {
       const updatedUser = await this.userModel.findByIdAndUpdate(id, updateUserDto, { new: true });
       if (!updatedUser) {
-        return { message: "Can't update the user" };
+        return { status: false, statusCode: HttpStatus.INTERNAL_SERVER_ERROR, data: updatedUser, message: Message.ERR_MSG };
       }
-      return { message: "User updated successfully", updatedUser };
+      return { status: true, statusCode: HttpStatus.OK, data: updatedUser, message: Message.UPDATE_USER };
     } catch (error) {
       console.log(error);
+      return { status: false, statusCode: HttpStatus.INTERNAL_SERVER_ERROR, message: error.message }
     }
   }
 
@@ -70,13 +74,15 @@ export class UserService {
     try {
       const deletedUser = await this.userModel.findByIdAndDelete(id);
       if (!deletedUser) {
-        return { message: "Can't delete the user" };
+        return { status: false, statusCode: HttpStatus.INTERNAL_SERVER_ERROR, data: deletedUser, message: Message.ERR_MSG };
       }
-      return { message: "User deleted successfully", deletedUser };
+      return {status:true,statusCode:HttpStatus.OK,data:deletedUser,message:Message.DELETE_USER};
     } catch (error) {
       console.log(error);
+      return { status: false, statusCode: HttpStatus.INTERNAL_SERVER_ERROR, message: error.message }
     }
-  }
+    }
+  
 
   async login(loginCredentials: LoginUserDto) {
     try {
@@ -84,12 +90,12 @@ export class UserService {
     const user = await this.userModel.findOne({ email });
 
     if (!user) {
-      return { message: "User not found" };
+      return { status: false, statusCode: HttpStatus.NOT_FOUND, data: email, message: Message.USER_NOT_FOUND };
     }
     const isPasswordMatch = await new Auth().comparePassword(password, user.password);
 
     if (!isPasswordMatch) {
-      return { message: "Incorrect password" };
+      return { status: false, statusCode: HttpStatus.UNAUTHORIZED, data: email, message: Message.PASSWORD_NOT_MATCH };
     }
 
     const obj = {
@@ -100,11 +106,12 @@ export class UserService {
     }
     const token = await new Auth().generateToken(obj);
     if (token) {
-      return { message: "User logged in sucessfully", token }
+      return {status:true,statusCode:HttpStatus.OK,data:user,message:Message.LOGIN,token};
     }
 
     } catch (error) {
       console.log(error);
+      return { status: false, statusCode: HttpStatus.INTERNAL_SERVER_ERROR, message: error.message }
     }
   }
 }
