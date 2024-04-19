@@ -2,6 +2,14 @@ import * as jwt from "jsonwebtoken";
 import * as bcrypt from "bcrypt";
 
 export class Auth {
+
+    async otpGeneration(n:number = 4) {
+        let otp = "";
+        for(let i = 1; i <= n; i++) {
+            otp += Math.floor(Math.random()*10);
+        }
+        return otp;
+    }
     async generateToken(user:any) {
         try {
             const obj = {

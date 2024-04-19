@@ -59,6 +59,9 @@ export class UserService {
 
   async update(id: string, updateUserDto: UpdateUserDto) {
     try {
+      if(updateUserDto.password) {
+        updateUserDto.password = await new Auth().encryptPassword(updateUserDto.password)
+      }
       const updatedUser = await this.userModel.findByIdAndUpdate(id, updateUserDto, { new: true });
       if (!updatedUser) {
         return { status: false, statusCode: HttpStatus.INTERNAL_SERVER_ERROR, data: updatedUser, message: Message.ERR_MSG };

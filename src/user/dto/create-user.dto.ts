@@ -24,3 +24,9 @@ export class LoginUserDto {
     @IsString()
     password:string;
 }
+
+export class OtpObjectDto {
+    @IsNotEmpty()
+    @IsString()
+    otp:string;
+}

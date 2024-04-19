@@ -1,10 +1,11 @@
 import { Controller, Get, Post, Body, Param, Delete, Put, Req, Res } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDto, LoginUserDto } from './dto/create-user.dto';
+import { CreateUserDto, LoginUserDto, OtpObjectDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Request, Response } from 'express';
 import { IUser } from 'src/interfaces/user.interface';
 import ResponseHelper from 'src/helpers/responseHelper';
+import { Auth } from 'src/utils/auth';
 
 interface RequestWithUser extends Request {
   user: IUser;
@@ -54,7 +55,10 @@ export class UserController {
   async update(@Req() req: RequestWithUser, @Res() res: Response, @Body() updateUserDto: UpdateUserDto) {
     try {
       const id = req.user._id;
+      console.log(id,"user id");
+      console.log(updateUserDto,"updateUserDto")
       const updatedUser = await this.userService.update(id, updateUserDto);
+      console.log(updatedUser,"updated user");
       return ResponseHelper.responseHandler(res, updatedUser.statusCode, updatedUser.status,
         updatedUser.message, updatedUser.data);
 
