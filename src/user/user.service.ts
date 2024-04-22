@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateUserDto, LoginUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectModel } from '@nestjs/mongoose';
@@ -6,6 +6,7 @@ import { Model } from 'mongoose';
 import { IUser } from 'src/interfaces/user.interface';
 import { Auth } from 'src/utils/auth';
 import { Message } from 'src/constants/responseMessage';
+
 
 @Injectable()
 export class UserService {
@@ -15,12 +16,24 @@ export class UserService {
   ) { }
   async create(createUserDto: CreateUserDto) {
     try {
-      const { name, email, password } = createUserDto;
+      const { name, email, password,phoneNumber } = createUserDto;
+      if(!name || !email || !password || !phoneNumber) {
+        throw new HttpException('All required details are not provided', HttpStatus.BAD_REQUEST);
+      }
+
+      const userExists = await this.userModel.findOne({ email});
+
+      if(userExists) {
+        throw new HttpException('User is already created', HttpStatus.BAD_REQUEST);
+      }
       const hashedPassword = await new Auth().encryptPassword(password);
+      const otp = await new Auth().otpGeneration();
       const user = await this.userModel.create({
         name,
         email,
-        password: hashedPassword
+        password: hashedPassword,
+        phoneNumber,
+        otp,
       });
       return { status: true, statusCode: HttpStatus.CREATED, data: user, message: Message.CREATE_USER };
     } catch (error) {
@@ -112,6 +125,24 @@ export class UserService {
       return {status:true,statusCode:HttpStatus.OK,data:user,message:Message.LOGIN,token};
     }
 
+    } catch (error) {
+      console.log(error);
+      return { status: false, statusCode: HttpStatus.INTERNAL_SERVER_ERROR, message: error.message }
+    }
+  }
+
+  async verifyOtp(createUserDto:CreateUserDto) {
+    try {
+      const user = await this.userModel.findOne({phoneNumber:createUserDto.phoneNumber});
+    if(!user) {
+      return { status: false, statusCode: HttpStatus.NOT_FOUND, data: user, message: Message.USER_NOT_FOUND };
+    }
+
+    if(user.otp !== createUserDto.otp) {
+      return { status: false, statusCode: HttpStatus.UNAUTHORIZED, data: null, message: Message.WRONG_OTP };
+    }
+
+    return { status: true, statusCode: HttpStatus.OK, data: user, message: Message.OTP_VERIFY }
     } catch (error) {
       console.log(error);
       return { status: false, statusCode: HttpStatus.INTERNAL_SERVER_ERROR, message: error.message }

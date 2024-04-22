@@ -92,4 +92,18 @@ export class UserController {
       return ResponseHelper.responseHandler(res, error.statusCode, error.status, error.message, error);
     }
   }
+
+  @Post("/verify-otp")
+  async verifyOtp(@Res() res:Response, @Body() createUserDto:CreateUserDto) {
+    try {
+      const response = await this.userService.verifyOtp(createUserDto);
+
+      if(response) {
+        return ResponseHelper.responseHandler(res, response.statusCode, response.status, response.message, response.data);
+      }
+    } catch (error) {
+      console.log(error);
+      return ResponseHelper.responseHandler(res, error.statusCode, error.status, error.message, error);
+    }
+  }
 }
